@@ -19,12 +19,14 @@
 
 FROM alpine:3.20 AS builder
 
-RUN apk add --no-cache rust cargo musl-dev openssl-dev pkgconfig
+RUN apk add --no-cache build-base curl git musl-dev openssl-dev pkgconfig
+ENV PATH="/root/.cargo/bin:${PATH}"
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal && \
+    rustup target add x86_64-unknown-linux-musl
 WORKDIR /app
 COPY Cargo.toml Cargo.lock ./
 COPY src ./src
-RUN rustup target add x86_64-unknown-linux-musl && \
-    cargo build --release --target x86_64-unknown-linux-musl
+RUN cargo build --release --target x86_64-unknown-linux-musl
 
 FROM alpine:3.20
 RUN apk add --no-cache ca-certificates
