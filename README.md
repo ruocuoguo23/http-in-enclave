@@ -49,7 +49,6 @@ Environment knobs:
 Environment knobs:
 - `IMAGE_NAME`/`IMAGE_TAG` to match the locally built image
 - `EIF_OUTPUT` (default `target/http-in-enclave.eif`)
-- `CPU_COUNT` / `MEMORY_MIB` baked into EIF metadata
 
 ## Run Enclave
 

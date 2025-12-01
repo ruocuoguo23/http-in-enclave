@@ -4,8 +4,6 @@ set -euo pipefail
 IMAGE_NAME=${IMAGE_NAME:-http-in-enclave}
 IMAGE_TAG=${IMAGE_TAG:-local}
 EIF_OUTPUT=${EIF_OUTPUT:-target/http-in-enclave.eif}
-CPU_COUNT=${CPU_COUNT:-2}
-MEMORY_MIB=${MEMORY_MIB:-512}
 
 FULL_IMAGE="${IMAGE_NAME}:${IMAGE_TAG}"
 
@@ -18,9 +16,7 @@ mkdir -p "$(dirname "${EIF_OUTPUT}")"
 
 nitro-cli build-enclave \
     --docker-uri "${FULL_IMAGE}" \
-    --output-file "${EIF_OUTPUT}" \
-    --cpu-count "${CPU_COUNT}" \
-    --memory "${MEMORY_MIB}"
+    --output-file "${EIF_OUTPUT}"
 
 echo "EIF artifact generated at ${EIF_OUTPUT}"
 
