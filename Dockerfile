@@ -23,12 +23,13 @@ RUN apk add --no-cache rust cargo musl-dev openssl-dev pkgconfig
 WORKDIR /app
 COPY Cargo.toml Cargo.lock ./
 COPY src ./src
-RUN cargo build --release
+RUN rustup target add x86_64-unknown-linux-musl && \
+    cargo build --release --target x86_64-unknown-linux-musl
 
 FROM alpine:3.20
 RUN apk add --no-cache ca-certificates
 WORKDIR /app
-COPY --from=builder /app/target/release/http-in-enclave /usr/local/bin/http-in-enclave
+COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/http-in-enclave /usr/local/bin/http-in-enclave
 EXPOSE 3000
 ENV PORT=3000
 CMD ["/usr/local/bin/http-in-enclave"]
