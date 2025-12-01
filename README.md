@@ -25,6 +25,8 @@ newgrp docker
 
 git clone https://github.com/<your-org>/http-in-enclave.git
 cd http-in-enclave
+
+# Default Dockerfile uses Alpine for smaller EIFs; Amazon Linux equivalent lives in `Dockerfile.amazonlinux` for easy reference.
 ```
 
 All commands below run on the enclave host inside this repository.
@@ -38,7 +40,7 @@ All commands below run on the enclave host inside this repository.
 Environment knobs:
 - `IMAGE_NAME` (default `http-in-enclave`)
 - `IMAGE_TAG` (default `local`)
-- `DOCKERFILE_PATH`, `PLATFORM` for alternate Dockerfiles/platforms
+- `DOCKERFILE_PATH`, `PLATFORM` for alternate Dockerfiles/platforms (point `DOCKERFILE_PATH` to `Dockerfile.amazonlinux` to reproduce the larger base image if needed)
 
 ## Build EIF
 
@@ -62,8 +64,10 @@ Environment knobs:
 Stop the enclave when finished:
 
 ```bash
-nitro-cli terminate-enclave --enclave-name http-in-enclave
+./scripts/stop-enclave.sh
 ```
+
+If the EC2 host reboots, all running enclaves are terminated and must be rebuilt/restarted. Re-run the Docker/EIF build only when the application changed; otherwise, just relaunch the EIF with `run-enclave.sh`. Should Nitro report `E26` (insufficient memory), increase `MEMORY_MIB` to exceed the EIF file size by ~100 MB.
 
 Console logs are saved to `target/http-in-enclave-console.log` for troubleshooting.
 
@@ -72,4 +76,3 @@ Console logs are saved to `target/http-in-enclave-console.log` for troubleshooti
 - Ensure Nitro Enclaves feature is enabled on the EC2 instance (`nitro-cli --version` should succeed).
 - If `nitro-cli build-enclave` fails with missing image, confirm the Docker image exists locally via `docker images`.
 - Port conflicts on the host are avoided in enclave mode, but when testing locally adjust `PORT` env var.
-
