@@ -62,8 +62,21 @@ Environment knobs:
 - `EIF_PATH`, `ENCLAVE_NAME`, `CPU_COUNT`, `MEMORY_MIB`, `CONSOLE_FILE`
 - `HOST_HTTP_PORT` (default `3000`) host-side TCP port for curling the enclave service
 - `VSOCK_PORT` (default `3000`) vsock port exposed inside the enclave via socat bridge
+- `HOST_EGRESS_ENABLED` (default `0`) enable host-side egress proxy
+- `HOST_EGRESS_TARGET_HOST`/`HOST_EGRESS_TARGET_PORT` (defaults `127.0.0.1:4000`) host service to reach from the enclave
+- `HOST_EGRESS_VSOCK_PORT` (default `4000`) vsock port used for egress traffic
 
-After the script launches the EIF it also starts `nitro-cli vsock-proxy` so the host can reach the enclave HTTP server via `curl http://127.0.0.1:${HOST_HTTP_PORT}/api/hello`.
+After the script launches the EIF it also starts a host `socat` proxy so the host can reach the enclave HTTP server via `curl http://127.0.0.1:${HOST_HTTP_PORT}/api/hello`. When `HOST_EGRESS_ENABLED=1`, a second `socat` bridge exposes a vsock listener that forwards to a host HTTP service, making it reachable from inside the enclave at `127.0.0.1:${ENCLAVE_EGRESS_PORT}`.
+
+### Enclave-side Egress
+
+`scripts/enclave-entrypoint.sh` honors optional env vars:
+- `ENCLAVE_EGRESS_ENABLED` (default `0`)
+- `ENCLAVE_EGRESS_PORT` (default `4000`), the loopback port your enclave app calls
+- `HOST_EGRESS_VSOCK_PORT` (default `4000`), must match the host script value
+- `HOST_PARENT_CID` (default `3`, Nitro host CID)
+
+Example: launch the host helper with `HOST_EGRESS_ENABLED=1 HOST_EGRESS_TARGET_PORT=4000` and set `ENCLAVE_EGRESS_ENABLED=1 ENCLAVE_EGRESS_PORT=4000` so code inside the enclave can `curl http://127.0.0.1:4000/…` and talk to the host service bound to `127.0.0.1:4000`.
 
 Stop the enclave when finished:
 
@@ -80,4 +93,5 @@ Console logs are saved to `target/http-in-enclave-console.log` for troubleshooti
 - Ensure Nitro Enclaves feature is enabled on the EC2 instance (`nitro-cli --version` should succeed).
 - If `nitro-cli build-enclave` fails with missing image, confirm the Docker image exists locally via `docker images`.
 - Port conflicts on the host are avoided in enclave mode, but when testing locally adjust `PORT` env var.
-- If `curl` on the host fails, confirm the vsock proxy is still running (`pgrep -af vsock-proxy`) and that `HOST_HTTP_PORT`/`VSOCK_PORT` match the enclave configuration.
+- If `curl` on the host fails, confirm the vsock proxy is still running (`pgrep -af socat`) and that `HOST_HTTP_PORT`/`VSOCK_PORT` match the enclave configuration.
+- If egress is enabled but the enclave cannot reach the host service, check that the host socat process is running and the target service is bound to `HOST_EGRESS_TARGET_HOST:HOST_EGRESS_TARGET_PORT`.
