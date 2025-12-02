@@ -40,7 +40,7 @@ start_vsock_proxy() {
         fi
         nitro-cli vsock-proxy --enclave-cid 16 --vsock-port "${VSOCK_PORT}" --local-port "${HOST_HTTP_PORT}" &
     else
-        "${PROXY_TOOL}" --enclave-cid 16 --vsock-port "${VSOCK_PORT}" --local-port "${HOST_HTTP_PORT}" &
+        "${PROXY_TOOL}" "${HOST_HTTP_PORT}" 16 "${VSOCK_PORT}" &
     fi
     PROXY_PID=$!
     echo "Started vsock proxy (${PROXY_TOOL}) on host port ${HOST_HTTP_PORT} (PID ${PROXY_PID})"
