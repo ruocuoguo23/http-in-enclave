@@ -60,6 +60,10 @@ Environment knobs:
 
 Environment knobs:
 - `EIF_PATH`, `ENCLAVE_NAME`, `CPU_COUNT`, `MEMORY_MIB`, `CONSOLE_FILE`
+- `HOST_HTTP_PORT` (default `3000`) host-side TCP port for curling the enclave service
+- `VSOCK_PORT` (default `3000`) vsock port exposed inside the enclave via socat bridge
+
+After the script launches the EIF it also starts `nitro-cli vsock-proxy` so the host can reach the enclave HTTP server via `curl http://127.0.0.1:${HOST_HTTP_PORT}/api/hello`.
 
 Stop the enclave when finished:
 
@@ -76,3 +80,4 @@ Console logs are saved to `target/http-in-enclave-console.log` for troubleshooti
 - Ensure Nitro Enclaves feature is enabled on the EC2 instance (`nitro-cli --version` should succeed).
 - If `nitro-cli build-enclave` fails with missing image, confirm the Docker image exists locally via `docker images`.
 - Port conflicts on the host are avoided in enclave mode, but when testing locally adjust `PORT` env var.
+- If `curl` on the host fails, confirm the vsock proxy is still running (`pgrep -af vsock-proxy`) and that `HOST_HTTP_PORT`/`VSOCK_PORT` match the enclave configuration.
