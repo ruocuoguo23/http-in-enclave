@@ -8,42 +8,17 @@ MEMORY_MIB=${MEMORY_MIB:-512}
 CONSOLE_FILE=${CONSOLE_FILE:-target/http-in-enclave-console.log}
 HOST_HTTP_PORT=${HOST_HTTP_PORT:-3000}
 VSOCK_PORT=${VSOCK_PORT:-3000}
-VSOCK_PROXY_BIN=${VSOCK_PROXY_BIN:-auto}
+SOCAT_BIN=${SOCAT_BIN:-socat}
 
-resolve_vsock_proxy_bin() {
-    if [[ "${VSOCK_PROXY_BIN}" != "auto" ]]; then
-        if ! command -v "${VSOCK_PROXY_BIN}" >/dev/null; then
-            echo "Specified VSOCK_PROXY_BIN='${VSOCK_PROXY_BIN}' not found in PATH" >&2
-            exit 1
-        fi
-        echo "${VSOCK_PROXY_BIN}"
-        return
-    fi
-
-    if command -v vsock-proxy >/dev/null; then
-        echo "vsock-proxy"
-    elif command -v nitro-cli >/dev/null; then
-        echo "nitro-cli"
-    else
-        echo "No vsock proxy binary found. Install the aws-nitro-enclaves-cli package or set VSOCK_PROXY_BIN." >&2
-        exit 1
-    fi
-}
-
-PROXY_TOOL=$(resolve_vsock_proxy_bin)
+if ! command -v "${SOCAT_BIN}" >/dev/null; then
+    echo "socat binary '${SOCAT_BIN}' not found. Install socat on the host or point SOCAT_BIN to an existing binary." >&2
+    exit 1
+fi
 
 start_vsock_proxy() {
-    if [[ "${PROXY_TOOL}" == "nitro-cli" ]]; then
-        if ! nitro-cli help 2>&1 | grep -q "vsock-proxy"; then
-            echo "nitro-cli does not support the vsock-proxy subcommand. Install the standalone vsock-proxy binary or set VSOCK_PROXY_BIN accordingly." >&2
-            exit 1
-        fi
-        nitro-cli vsock-proxy --enclave-cid 16 --vsock-port "${VSOCK_PORT}" --local-port "${HOST_HTTP_PORT}" &
-    else
-        "${PROXY_TOOL}" "${HOST_HTTP_PORT}" 16 "${VSOCK_PORT}" &
-    fi
+    "${SOCAT_BIN}" TCP-LISTEN:"${HOST_HTTP_PORT}",fork,reuseaddr VSOCK-CONNECT:16:"${VSOCK_PORT}" &
     PROXY_PID=$!
-    echo "Started vsock proxy (${PROXY_TOOL}) on host port ${HOST_HTTP_PORT} (PID ${PROXY_PID})"
+    echo "Started vsock proxy (${SOCAT_BIN}) on host port ${HOST_HTTP_PORT} (PID ${PROXY_PID})"
 }
 
 cleanup_proxy() {
